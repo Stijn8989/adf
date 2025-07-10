@@ -1,0 +1,16 @@
+{
+	"name": "ds_vehiclecluster_api",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_athlon",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": "VehicleCluster?Filters.Segment=Cars&Filters.IncludeTaxInPrices=false&Filters.NumberOfKmPerMonth=2500&Filters.IncludeMileageCostsInPricing=true&Filters.IncludeFuelCostsInPricing=true"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

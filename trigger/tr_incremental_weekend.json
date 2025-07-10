@@ -1,0 +1,39 @@
+{
+	"name": "tr_incremental_weekend",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_main_pipeline",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"pm_full_refresh": "0"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2025-06-06T16:08:00",
+				"timeZone": "W. Europe Standard Time",
+				"schedule": {
+					"minutes": [
+						30
+					],
+					"hours": [
+						12
+					],
+					"weekDays": [
+						"Saturday",
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

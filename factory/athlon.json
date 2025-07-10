@@ -1,0 +1,9 @@
+{
+	"name": "athlon",
+	"location": "northeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a0967c94-a247-49ae-9764-3bdb6e09cc5f",
+		"tenantId": "662571cf-c9f8-4d29-ac71-067a4568011d"
+	}
+}

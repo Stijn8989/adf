@@ -1,0 +1,428 @@
+{
+	"name": "pl_vehicle_cluster",
+	"properties": {
+		"activities": [
+			{
+				"name": "cd_vehicle_cluster_current",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "dl_vehicle_cluster_current",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "sv_vr_filename",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "sv_vr_folder_current",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "sv_vr_folder_archive",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:01:40",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET"
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings",
+							"filePattern": "arrayOfObjects"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_vehiclecluster_api",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_storage_account",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@variables('vr_folder_current')",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@variables('vr_filename')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "wt_random",
+				"type": "Wait",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": {
+						"value": "@rand(1, 10)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "sp_load_stg_vehicle_cluster",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "cd_vehicle_cluster_current",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_load_stg_vehicle_cluster]",
+					"storedProcedureParameters": {
+						"folder": {
+							"value": {
+								"value": "@variables('vr_folder_current')",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"filename": {
+							"value": {
+								"value": "@variables('vr_filename')",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_sqldb",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "cd_archive_vehicle_cluster",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "sp_load_stg_vehicle_cluster",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_storage_account_binary",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@variables('vr_folder_current')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_storage_account_binary",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@variables('vr_folder_archive')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "sv_vr_folder_current",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "wt_random",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vr_folder_current",
+					"value": {
+						"value": "@concat(pipeline().parameters.directory\n    , '/current')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "sv_vr_folder_archive",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "wt_random",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vr_folder_archive",
+					"value": {
+						"value": "@concat(pipeline().parameters.directory\n    , '/archive')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "dl_vehicle_cluster_current",
+				"type": "Delete",
+				"dependsOn": [
+					{
+						"activity": "wt_random",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_storage_account_binary",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@variables('vr_folder_current')",
+								"type": "Expression"
+							}
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					}
+				}
+			},
+			{
+				"name": "sv_vr_filename",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "lu_etl_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vr_filename",
+					"value": {
+						"value": "@concat(activity('lu_etl_date').output.firstRow.insertion_datetime_text\n    , '.json')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "sp_load_his_vehicle_cluster",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_load_stg_vehicle_cluster",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_load_his_vehicle_cluster]",
+					"storedProcedureParameters": {
+						"insertion_datetime": {
+							"value": {
+								"value": "@activity('lu_etl_date').output.firstRow.insertion_datetime",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_sqldb",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "lu_etl_date",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "wt_random",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[sp_get_etl_date]",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sqldb",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": ".",
+							"tablename": "."
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"container": {
+				"type": "string",
+				"defaultValue": "landingzone"
+			},
+			"directory": {
+				"type": "string",
+				"defaultValue": "vehicle_cluster"
+			}
+		},
+		"variables": {
+			"vr_folder_current": {
+				"type": "String"
+			},
+			"vr_folder_archive": {
+				"type": "String"
+			},
+			"vr_filename": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-06-09T21:00:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

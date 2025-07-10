@@ -1,0 +1,24 @@
+{
+	"name": "ds_vehicle_api",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_athlon",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"id": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@concat('Vehicle?Segment=Cars&VehicleId='\n    , dataset().id\n    , '&IncludeTaxInPrices=false&NumberOfKmPerMonth=2500&IncludeMileageCostsInPricing=true&IncludeFuelCostsInPricing=true')",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

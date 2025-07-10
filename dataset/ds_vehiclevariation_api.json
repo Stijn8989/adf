@@ -1,0 +1,27 @@
+{
+	"name": "ds_vehiclevariation_api",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_athlon",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"make": {
+				"type": "string"
+			},
+			"model": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@concat('VehicleVariation?Filters.Segment=Cars&Filters.IncludeTaxInPrices=false&Filters.NumberOfKmPerMonth=2500&Filters.IncludeMileageCostsInPricing=true&Filters.IncludeFuelCostsInPricing=true&SortBy=PriceInEuro&Filters.Make='\n    , dataset().make\n    , '&Filters.Model='\n    , dataset().model)",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

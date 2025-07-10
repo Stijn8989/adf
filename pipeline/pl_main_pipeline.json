@@ -1,0 +1,175 @@
+{
+	"name": "pl_main_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "ep_pl_vehicle_cluster",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_etl_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_vehicle_cluster",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "ep_pl_vehicle",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_vehicle_variation",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_vehicle",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "ep_pl_date_table",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_vehicle",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_date_table",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "ep_pl_etl_date",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_etl_date",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "ep_pl_vehicle_variation",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_vehicle_cluster",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_vehicle_variation",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"pm_full_refresh": {
+							"value": "@pipeline().parameters.pm_full_refresh",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ep_pl_notification",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_date_table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_notification",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "ep_pl_persist_dim_fct_layer",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ep_pl_date_table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_persist_dim_fct_layer",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"parameters": {
+			"pm_full_refresh": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-06-12T07:28:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
