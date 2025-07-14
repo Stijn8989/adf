@@ -1,5 +1,5 @@
 {
-	"name": "ds_storage_account2",
+	"name": "ds_storage_account",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ls_valstathlon",

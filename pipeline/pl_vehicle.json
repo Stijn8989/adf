@@ -29,7 +29,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_sqldb2",
+						"referenceName": "ds_sqldb",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema": ".",
@@ -120,7 +120,7 @@
 							},
 							"inputs": [
 								{
-									"referenceName": "ds_vehicle_api2",
+									"referenceName": "ds_vehicle_api",
 									"type": "DatasetReference",
 									"parameters": {
 										"id": {
@@ -132,7 +132,7 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "ds_storage_account2",
+									"referenceName": "ds_storage_account",
 									"type": "DatasetReference",
 									"parameters": {
 										"container": {
@@ -264,7 +264,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_sqldb2",
+						"referenceName": "ds_sqldb",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema": ".",

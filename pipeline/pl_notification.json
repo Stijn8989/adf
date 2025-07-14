@@ -23,7 +23,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_sqldb2",
+						"referenceName": "ds_sqldb",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema": ".",
