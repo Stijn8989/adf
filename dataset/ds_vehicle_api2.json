@@ -1,5 +1,5 @@
 {
-	"name": "ds_vehicle_api",
+	"name": "ds_vehicle_api2",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ls_athlon",

@@ -61,13 +61,13 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "ds_vehiclecluster_api",
+						"referenceName": "ds_vehiclecluster_api2",
 						"type": "DatasetReference"
 					}
 				],
 				"outputs": [
 					{
-						"referenceName": "ds_storage_account",
+						"referenceName": "ds_storage_account2",
 						"type": "DatasetReference",
 						"parameters": {
 							"container": {
@@ -182,7 +182,7 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "ds_storage_account_binary",
+						"referenceName": "ds_storage_account_binary2",
 						"type": "DatasetReference",
 						"parameters": {
 							"container": {
@@ -198,7 +198,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "ds_storage_account_binary",
+						"referenceName": "ds_storage_account_binary2",
 						"type": "DatasetReference",
 						"parameters": {
 							"container": {
@@ -282,7 +282,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataset": {
-						"referenceName": "ds_storage_account_binary",
+						"referenceName": "ds_storage_account_binary2",
 						"type": "DatasetReference",
 						"parameters": {
 							"container": {
@@ -365,6 +365,7 @@
 			},
 			{
 				"name": "lu_etl_date",
+				"description": " ",
 				"type": "Lookup",
 				"dependsOn": [
 					{
@@ -390,7 +391,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_sqldb",
+						"referenceName": "ds_sqldb2",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema": ".",

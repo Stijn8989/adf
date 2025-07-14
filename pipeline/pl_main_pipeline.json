@@ -73,6 +73,7 @@
 			},
 			{
 				"name": "ep_pl_etl_date",
+				"description": " ",
 				"type": "ExecutePipeline",
 				"dependsOn": [],
 				"policy": {

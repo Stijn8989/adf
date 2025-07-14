@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "st_generate_etl_date",
+				"description": " ",
 				"type": "SqlServerStoredProcedure",
 				"dependsOn": [],
 				"policy": {

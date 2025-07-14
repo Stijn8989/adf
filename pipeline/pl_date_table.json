@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "sp_generate_date_table",
+				"description": " ",
 				"type": "SqlServerStoredProcedure",
 				"dependsOn": [],
 				"policy": {

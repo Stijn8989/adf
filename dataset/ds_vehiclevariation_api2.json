@@ -1,5 +1,5 @@
 {
-	"name": "ds_vehiclevariation_api",
+	"name": "ds_vehiclevariation_api2",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ls_athlon",

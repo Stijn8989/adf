@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "lu_notification_vehicle",
+				"description": " ",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -22,7 +23,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_sqldb",
+						"referenceName": "ds_sqldb2",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema": ".",

@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "sp_persist_dim_vehicle",
+				"description": " ",
 				"type": "SqlServerStoredProcedure",
 				"dependsOn": [],
 				"policy": {
