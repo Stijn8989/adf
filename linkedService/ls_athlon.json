@@ -8,6 +8,7 @@
 			"url": "https://flex.athlon.com/api/v1/",
 			"enableServerCertificateValidation": true,
 			"authenticationType": "Anonymous"
-		}
+		},
+		"description": "ls api"
 	}
 }
