@@ -389,14 +389,6 @@
 						"sqlReaderStoredProcedureName": "[dbo].[sp_get_etl_date]",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
-					},
-					"dataset": {
-						"referenceName": "ds_sqldb",
-						"type": "DatasetReference",
-						"parameters": {
-							"schema": ".",
-							"tablename": "."
-						}
 					}
 				}
 			}
