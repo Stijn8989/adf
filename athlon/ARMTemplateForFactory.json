@@ -1,0 +1,2200 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "athlon"
+		},
+		"ls_sqldb_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'ls_sqldb'"
+		},
+		"ls_valstathlon_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ls_valstathlon'"
+		},
+		"ls_athlon_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://flex.athlon.com/api/v1/"
+		},
+		"ls_sqldb_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "athlonsqlserver.database.windows.net"
+		},
+		"ls_sqldb_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "athlon"
+		},
+		"ls_sqldb_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladminuser"
+		},
+		"tr_full_refresh_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"type": "string",
+			"defaultValue": "1"
+		},
+		"tr_incemental_week_binnen_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"type": "string",
+			"defaultValue": "0"
+		},
+		"tr_incremental_week_buiten_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"type": "string",
+			"defaultValue": "0"
+		},
+		"tr_incremental_weekend_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"type": "string",
+			"defaultValue": "0"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_date_table')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "sp_generate_date_table",
+						"description": " ",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_generate_date_table]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-06T16:32:42Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_etl_date')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "st_generate_etl_date",
+						"description": " ",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_generate_etl_date]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-07T08:34:36Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_main_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ep_pl_vehicle_cluster",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_etl_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_vehicle_cluster",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "ep_pl_vehicle",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_vehicle_variation",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_vehicle",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "ep_pl_date_table",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_vehicle",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_date_table",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "ep_pl_etl_date",
+						"description": " ",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_etl_date",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "ep_pl_vehicle_variation",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_vehicle_cluster",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_vehicle_variation",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"pm_full_refresh": {
+									"value": "@pipeline().parameters.pm_full_refresh",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "ep_pl_notification",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_date_table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_notification",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "ep_pl_persist_dim_fct_layer",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ep_pl_date_table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_persist_dim_fct_layer",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pm_full_refresh": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-12T07:28:43Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_vehicle_cluster')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_vehicle')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_date_table')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_etl_date')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_vehicle_variation')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_notification')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_persist_dim_fct_layer')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_notification')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "lu_notification_vehicle",
+						"description": " ",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_notification]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							}
+						}
+					},
+					{
+						"name": "if_send_notification",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "lu_notification_vehicle",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('lu_notification_vehicle').output.firstRow.trigger_notification_flag, 1)",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "wb_send_notification",
+									"type": "WebActivity",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {},
+										"url": "https://prod-22.northeurope.logic.azure.com:443/workflows/cd0527d99e4e42bcba829cf360922f47/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=5vWyH45WQ7CgoWnTjk3g_GAM9RhMpWcV1zARgAB0DJU",
+										"body": {
+											"value": "@concat('{\n    \"title\": \"Vehicles met notificatie-instelling zijn beschikbaar!\",\n    \"message\": \"'\n    , activity('lu_notification_vehicle').output.firstRow.trigger_notification_content\n    , '\",\n    \"color\": \"\",\n    \"dataFactoryName\": \"\",\n    \"pipelineName\": \"\",\n    \"pipelineRunId\": \"\",\n    \"time\": \"\"\n}')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-12T09:58:15Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_persist_dim_fct_layer')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "sp_persist_dim_vehicle",
+						"description": " ",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[persist_dim_fct_layer]",
+							"storedProcedureParameters": {
+								"viewname": {
+									"value": "dim.vw_vehicle",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "sp_persist_dim_date",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[persist_dim_fct_layer]",
+							"storedProcedureParameters": {
+								"viewname": {
+									"value": "dim.vw_date",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "sp_persist_dim_vehicle_options",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[persist_dim_fct_layer]",
+							"storedProcedureParameters": {
+								"viewname": {
+									"value": "dim.vw_vehicle_options",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "sp_persist_fct_availability",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[persist_dim_fct_layer]",
+							"storedProcedureParameters": {
+								"viewname": {
+									"value": "fct.vw_availability",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "sp_persist_fct_max_insertion_datetime",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[persist_dim_fct_layer]",
+							"storedProcedureParameters": {
+								"viewname": {
+									"value": "fct.vw_max_insertion_datetime",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-12T07:27:59Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_vehicle')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "lu_id_from_vehicle_variation",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "lu_etl_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_create_vehicle_list_to_load]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "fe_vehicle",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "lu_id_from_vehicle_variation",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "st_truncate_stg_vehicle",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('lu_id_from_vehicle_variation').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "cd_vehicle",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "sv_vr_filename",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "GET"
+										},
+										"sink": {
+											"type": "JsonSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
+											},
+											"formatSettings": {
+												"type": "JsonWriteSettings",
+												"filePattern": "arrayOfObjects"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "$['id']"
+													},
+													"sink": {
+														"name": "id",
+														"type": "Guid"
+													}
+												}
+											],
+											"collectionReference": ""
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_vehicle_api",
+											"type": "DatasetReference",
+											"parameters": {
+												"id": {
+													"value": "@item().id",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_storage_account",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.container",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@pipeline().parameters.directory",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().id\r\n    , '.json')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "sv_vr_filename",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "vr_filename",
+										"value": {
+											"value": "@concat(item().id\n    , '.json')",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "sp_load_stg_vehicle",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "cd_vehicle",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[sp_load_stg_vehicle]",
+										"storedProcedureParameters": {
+											"filename": {
+												"value": {
+													"value": "@variables('vr_filename')",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_sqldb",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "sp_load_his_vehicle",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "fe_vehicle",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_load_his_vehicle]",
+							"storedProcedureParameters": {
+								"insertion_datetime": {
+									"value": {
+										"value": "@activity('lu_etl_date').output.firstRow.insertion_datetime",
+										"type": "Expression"
+									},
+									"type": "Datetime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "lu_etl_date",
+						"description": " ",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_get_etl_date]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							}
+						}
+					},
+					{
+						"name": "st_truncate_stg_vehicle",
+						"type": "Script",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "NonQuery",
+									"text": "TRUNCATE TABLE stg.vehicle"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"container": {
+						"type": "string",
+						"defaultValue": "landingzone"
+					},
+					"directory": {
+						"type": "string",
+						"defaultValue": "vehicle"
+					}
+				},
+				"variables": {
+					"vr_filename": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-08T21:44:13Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_sqldb')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]",
+				"[concat(variables('factoryId'), '/datasets/ds_vehicle_api')]",
+				"[concat(variables('factoryId'), '/datasets/ds_storage_account')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_vehicle_cluster')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "cd_vehicle_cluster_current",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "dl_vehicle_cluster_current",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "sv_vr_filename",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "sv_vr_folder_current",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "sv_vr_folder_archive",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:01:40",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "GET"
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "PreserveHierarchy"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings",
+									"filePattern": "arrayOfObjects"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_vehiclecluster_api",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_storage_account",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.container",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@variables('vr_folder_current')",
+										"type": "Expression"
+									},
+									"filename": {
+										"value": "@variables('vr_filename')",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "wt_random",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": {
+								"value": "@rand(1, 10)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "sp_load_stg_vehicle_cluster",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "cd_vehicle_cluster_current",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_load_stg_vehicle_cluster]",
+							"storedProcedureParameters": {
+								"folder": {
+									"value": {
+										"value": "@variables('vr_folder_current')",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"filename": {
+									"value": {
+										"value": "@variables('vr_filename')",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "cd_archive_vehicle_cluster",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "sp_load_stg_vehicle_cluster",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "BinarySource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							},
+							"sink": {
+								"type": "BinarySink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "PreserveHierarchy"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_storage_account_binary",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.container",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@variables('vr_folder_current')",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_storage_account_binary",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.container",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@variables('vr_folder_archive')",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "sv_vr_folder_current",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "wt_random",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "vr_folder_current",
+							"value": {
+								"value": "@concat(pipeline().parameters.directory\n    , '/current')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "sv_vr_folder_archive",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "wt_random",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "vr_folder_archive",
+							"value": {
+								"value": "@concat(pipeline().parameters.directory\n    , '/archive')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "dl_vehicle_cluster_current",
+						"type": "Delete",
+						"dependsOn": [
+							{
+								"activity": "wt_random",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_storage_account_binary",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.container",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@variables('vr_folder_current')",
+										"type": "Expression"
+									}
+								}
+							},
+							"enableLogging": false,
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							}
+						}
+					},
+					{
+						"name": "sv_vr_filename",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "lu_etl_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "vr_filename",
+							"value": {
+								"value": "@concat(activity('lu_etl_date').output.firstRow.insertion_datetime_text\n    , '.json')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "sp_load_his_vehicle_cluster",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "sp_load_stg_vehicle_cluster",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_load_his_vehicle_cluster]",
+							"storedProcedureParameters": {
+								"insertion_datetime": {
+									"value": {
+										"value": "@activity('lu_etl_date').output.firstRow.insertion_datetime",
+										"type": "Expression"
+									},
+									"type": "Datetime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "lu_etl_date",
+						"description": " ",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "wt_random",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_get_etl_date]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"container": {
+						"type": "string",
+						"defaultValue": "landingzone"
+					},
+					"directory": {
+						"type": "string",
+						"defaultValue": "vehicle_cluster"
+					}
+				},
+				"variables": {
+					"vr_folder_current": {
+						"type": "String"
+					},
+					"vr_folder_archive": {
+						"type": "String"
+					},
+					"vr_filename": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-09T21:00:46Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_vehiclecluster_api')]",
+				"[concat(variables('factoryId'), '/datasets/ds_storage_account')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]",
+				"[concat(variables('factoryId'), '/datasets/ds_storage_account_binary')]",
+				"[concat(variables('factoryId'), '/datasets/ds_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_vehicle_variation')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "lu_id_from_vehicle_cluster",
+						"description": " ",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_create_cluster_list_to_load]",
+								"storedProcedureParameters": {
+									"full_refresh": {
+										"type": "Int16",
+										"value": "0"
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "fe_vehicle_cluster",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "lu_id_from_vehicle_cluster",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "st_truncate_stg_vehicle_variation",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "lu_etl_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('lu_id_from_vehicle_cluster').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "cd_vehicle_variation",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "sv_vr_filename",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "RestSource",
+											"httpRequestTimeout": "00:01:40",
+											"requestInterval": "00.00:00:00.010",
+											"requestMethod": "GET"
+										},
+										"sink": {
+											"type": "JsonSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
+											},
+											"formatSettings": {
+												"type": "JsonWriteSettings",
+												"filePattern": "arrayOfObjects"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"path": "$['id']"
+													},
+													"sink": {
+														"name": "id",
+														"type": "Guid"
+													}
+												}
+											],
+											"collectionReference": ""
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_vehiclevariation_api",
+											"type": "DatasetReference",
+											"parameters": {
+												"make": {
+													"value": "@item().make",
+													"type": "Expression"
+												},
+												"model": {
+													"value": "@item().model",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_storage_account",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.container",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@pipeline().parameters.directory",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@variables('vr_filename')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "sv_vr_filename",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "vr_filename",
+										"value": {
+											"value": "@concat(item().make\r\n    , '_'\r\n    , item().model\r\n    , '.json')",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "sp_load_stg_vehicle_variation",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "cd_vehicle_variation",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[sp_load_stg_vehicle_variation]",
+										"storedProcedureParameters": {
+											"filename": {
+												"value": {
+													"value": "@variables('vr_filename')",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"folder": {
+												"value": {
+													"value": "@pipeline().parameters.directory",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_sqldb",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "st_truncate_stg_vehicle_variation",
+						"type": "Script",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "NonQuery",
+									"text": "TRUNCATE TABLE stg.vehicle_variation"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "sp_load_stg_vehicle_variation_veh_cnt_1",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "fe_vehicle_cluster",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_load_stg_vehicle_variation_veh_cnt_1]"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "lu_etl_date",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[sp_get_etl_date]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sqldb",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": ".",
+									"tablename": "."
+								}
+							}
+						}
+					},
+					{
+						"name": "sp_load_his_vehicle_variation",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "if_full_refresh",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[sp_load_his_vehicle_variation]",
+							"storedProcedureParameters": {
+								"insertion_datetime": {
+									"value": {
+										"value": "@activity('lu_etl_date').output.firstRow.insertion_datetime",
+										"type": "Expression"
+									},
+									"type": "Datetime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_sqldb",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "if_full_refresh",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "sp_load_stg_vehicle_variation_veh_cnt_1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.pm_full_refresh, 1)",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "sp_load_stg_vehicle_variation_unchanged_in_new_run",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[sp_load_stg_vehicle_variation_unchanged_in_new_run]"
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_sqldb",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pm_full_refresh": {
+						"type": "int",
+						"defaultValue": 0
+					},
+					"container": {
+						"type": "string",
+						"defaultValue": "landingzone"
+					},
+					"directory": {
+						"type": "string",
+						"defaultValue": "vehicle_variation"
+					}
+				},
+				"variables": {
+					"vr_filename": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-06-08T22:18:21Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_sqldb')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]",
+				"[concat(variables('factoryId'), '/datasets/ds_vehiclevariation_api')]",
+				"[concat(variables('factoryId'), '/datasets/ds_storage_account')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_sqldb')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_sqldb",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema": {
+						"type": "string"
+					},
+					"tablename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().tablename",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_sqldb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_storage_account')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_valstathlon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"directory": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().directory",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_valstathlon')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_storage_account_binary')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_valstathlon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"directory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": {
+							"value": "@dataset().directory",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_valstathlon')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_vehicle_api')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_athlon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"id": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": {
+						"value": "@concat('Vehicle?Segment=Cars&VehicleId='\n    , dataset().id\n    , '&IncludeTaxInPrices=false&NumberOfKmPerMonth=2500&IncludeMileageCostsInPricing=true&IncludeFuelCostsInPricing=true')",
+						"type": "Expression"
+					}
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_athlon')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_vehiclecluster_api')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_athlon",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": "VehicleCluster?Filters.Segment=Cars&Filters.IncludeTaxInPrices=false&Filters.NumberOfKmPerMonth=2500&Filters.IncludeMileageCostsInPricing=true&Filters.IncludeFuelCostsInPricing=true"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_athlon')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_vehiclevariation_api')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_athlon",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"make": {
+						"type": "string"
+					},
+					"model": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": {
+						"value": "@concat('VehicleVariation?Filters.Segment=Cars&Filters.IncludeTaxInPrices=false&Filters.NumberOfKmPerMonth=2500&Filters.IncludeMileageCostsInPricing=true&Filters.IncludeFuelCostsInPricing=true&SortBy=PriceInEuro&Filters.Make='\n    , dataset().make\n    , '&Filters.Model='\n    , dataset().model)",
+						"type": "Expression"
+					}
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_athlon')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_athlon')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "ls api",
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('ls_athlon_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_sqldb')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "ls db",
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('ls_sqldb_properties_typeProperties_server')]",
+					"database": "[parameters('ls_sqldb_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('ls_sqldb_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('ls_sqldb_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_valstathlon')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "ls sa",
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('ls_valstathlon_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_full_refresh')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_main_pipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"pm_full_refresh": "[parameters('tr_full_refresh_properties_pl_main_pipeline_parameters_pm_full_refresh')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2025-06-06T13:27:00",
+						"timeZone": "W. Europe Standard Time",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								8
+							],
+							"weekDays": [
+								"Monday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_main_pipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_incemental_week_binnen_werkuren')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_main_pipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"pm_full_refresh": "[parameters('tr_incemental_week_binnen_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2025-06-09T20:52:00",
+						"timeZone": "W. Europe Standard Time",
+						"schedule": {
+							"minutes": [
+								0,
+								20,
+								40
+							],
+							"hours": [
+								10,
+								11,
+								12,
+								13,
+								14,
+								15
+							],
+							"weekDays": [
+								"Monday",
+								"Tuesday",
+								"Wednesday",
+								"Thursday",
+								"Friday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_main_pipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_incremental_week_buiten_werkuren')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_main_pipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"pm_full_refresh": "[parameters('tr_incremental_week_buiten_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2025-06-02T20:55:00",
+						"timeZone": "W. Europe Standard Time",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								7,
+								9,
+								16,
+								17,
+								19,
+								22
+							],
+							"weekDays": [
+								"Monday",
+								"Tuesday",
+								"Wednesday",
+								"Thursday",
+								"Friday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_main_pipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_incremental_weekend')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_main_pipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"pm_full_refresh": "[parameters('tr_incremental_weekend_properties_pl_main_pipeline_parameters_pm_full_refresh')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2025-06-06T16:08:00",
+						"timeZone": "W. Europe Standard Time",
+						"schedule": {
+							"minutes": [
+								30
+							],
+							"hours": [
+								12
+							],
+							"weekDays": [
+								"Saturday",
+								"Sunday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_main_pipeline')]"
+			]
+		}
+	]
+}

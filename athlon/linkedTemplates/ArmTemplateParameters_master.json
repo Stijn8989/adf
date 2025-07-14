@@ -1,0 +1,45 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "athlon"
+		},
+		"ls_sqldb_password": {
+			"value": ""
+		},
+		"ls_valstathlon_connectionString": {
+			"value": ""
+		},
+		"ls_athlon_properties_typeProperties_url": {
+			"value": "https://flex.athlon.com/api/v1/"
+		},
+		"ls_sqldb_properties_typeProperties_server": {
+			"value": "athlonsqlserver.database.windows.net"
+		},
+		"ls_sqldb_properties_typeProperties_database": {
+			"value": "athlon"
+		},
+		"ls_sqldb_properties_typeProperties_userName": {
+			"value": "sqladminuser"
+		},
+		"tr_full_refresh_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"value": "1"
+		},
+		"tr_incemental_week_binnen_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"value": "0"
+		},
+		"tr_incremental_week_buiten_werkuren_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"value": "0"
+		},
+		"tr_incremental_weekend_properties_pl_main_pipeline_parameters_pm_full_refresh": {
+			"value": "0"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
