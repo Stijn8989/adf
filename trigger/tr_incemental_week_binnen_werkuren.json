@@ -2,7 +2,7 @@
 	"name": "tr_incemental_week_binnen_werkuren",
 	"properties": {
 		"annotations": [],
-		"runtimeState": "Started",
+		"runtimeState": "Stopped",
 		"pipelines": [
 			{
 				"pipelineReference": {
